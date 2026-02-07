@@ -2,6 +2,7 @@ import * as AuthController from '../../wailsjs/go/controllers/AuthController'
 import * as DataController from '../../wailsjs/go/controllers/DataController'
 import * as SurveyController from '../../wailsjs/go/controllers/SurveyController'
 import * as IssueController from '../../wailsjs/go/controllers/IssueController'
+import * as AccountController from '../../wailsjs/go/controllers/AccountController'
 
 class ApiClient {
   // Auth APIs
@@ -125,6 +126,37 @@ class ApiClient {
 
   async deleteIssue(id: number) {
     const result = await IssueController.DeleteIssue(id)
+    return JSON.parse(result)
+  }
+
+  // Account APIs
+  async updateName(newName: string, password: string, userId: number) {
+    const result = await AccountController.UpdateName(newName, password, userId)
+    return JSON.parse(result)
+  }
+
+  async updatePassword(currentPassword: string, newPassword: string, userId: number) {
+    const result = await AccountController.UpdatePassword(currentPassword, newPassword, userId)
+    return JSON.parse(result)
+  }
+
+  async deleteAccount(password: string, userId: number) {
+    const result = await AccountController.DeleteAccount(password, userId)
+    return JSON.parse(result)
+  }
+
+  async getUserList(page: number, pageSize: number) {
+    const result = await AccountController.GetUserList(page, pageSize)
+    return JSON.parse(result)
+  }
+
+  async deleteUserAccount(targetUserId: number, adminId: number) {
+    const result = await AccountController.DeleteUserAccount(targetUserId, adminId)
+    return JSON.parse(result)
+  }
+
+  async resetUserPassword(userId: number) {
+    const result = await AccountController.ResetUserPassword(userId)
     return JSON.parse(result)
   }
 }

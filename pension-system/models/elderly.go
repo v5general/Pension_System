@@ -11,7 +11,7 @@ type Elderly struct {
 	Name             string         `json:"name" gorm:"not null" binding:"required"`
 	Gender           string         `json:"gender" gorm:"not null" binding:"required"` // 男, 女
 	Age              int            `json:"age" gorm:"not null" binding:"required"`
-	IDCard           string         `json:"id_card" gorm:"uniqueIndex"`
+	IDCard           *string        `json:"id_card" gorm:"uniqueIndex;type:varchar(18)"`
 	Phone            string         `json:"phone"`
 	Address          string         `json:"address"`
 	HealthCondition  string         `json:"health_condition"` // 健康状况

@@ -17,7 +17,11 @@
       </el-tabs>
 
       <el-table :data="issues" border style="width: 100%; margin-top: 20px" v-loading="loading">
-        <el-table-column prop="id" label="ID" width="60" />
+        <el-table-column label="序号" width="80" align="center">
+          <template #default="{ $index }">
+            {{ (currentPage - 1) * pageSize + $index + 1 }}
+          </template>
+        </el-table-column>
         <el-table-column prop="title" label="问题标题" min-width="200" />
         <el-table-column prop="category" label="分类" width="120">
           <template #default="{ row }">
@@ -40,7 +44,7 @@
             {{ formatDateTime(row.created_at) }}
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="200" fixed="right">
+        <el-table-column label="操作" width="280" fixed="right">
           <template #default="{ row }">
             <el-button size="small" @click="viewDetail(row)">详情</el-button>
             <el-button
@@ -58,6 +62,14 @@
               @click="closeIssue(row)"
             >
               关闭
+            </el-button>
+            <el-button
+              v-if="isAdmin"
+              type="danger"
+              size="small"
+              @click="deleteIssue(row)"
+            >
+              删除
             </el-button>
           </template>
         </el-table-column>
@@ -343,6 +355,26 @@ const closeIssue = (issue: any) => {
       }
     } catch (error) {
       ElMessage.error('操作失败')
+    }
+  }).catch(() => {})
+}
+
+const deleteIssue = (issue: any) => {
+  ElMessageBox.confirm('确定要删除这个问题吗？删除后无法恢复！', '提示', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'warning'
+  }).then(async () => {
+    try {
+      const response = await api.deleteIssue(issue.id)
+      if (response.success) {
+        ElMessage.success('删除成功')
+        loadIssues()
+      } else {
+        ElMessage.error(response.message)
+      }
+    } catch (error) {
+      ElMessage.error('删除失败')
     }
   }).catch(() => {})
 }

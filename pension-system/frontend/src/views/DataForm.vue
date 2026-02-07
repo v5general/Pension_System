@@ -166,7 +166,20 @@ const handleSubmit = async () => {
 
     submitLoading.value = true
     try {
-      const data = { ...formData, recorder_id: 1 }
+      // Convert empty strings to null for nullable fields
+      const data = {
+        ...formData,
+        recorder_id: 1,
+        id_card: formData.id_card || null,
+        phone: formData.phone || null,
+        address: formData.address || null,
+        health_condition: formData.health_condition || null,
+        economic_source: formData.economic_source || null,
+        living_condition: formData.living_condition || null,
+        care_level: formData.care_level || null,
+        medical_insurance: formData.medical_insurance || null,
+        remarks: formData.remarks || null
+      }
       const response = await api.createElderly(data)
 
       if (response.success) {

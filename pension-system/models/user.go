@@ -12,6 +12,7 @@ type User struct {
 	Password  string         `json:"-" gorm:"not null" binding:"required"`
 	Name      string         `json:"name" gorm:"not null"`
 	Role      string         `json:"role" gorm:"not null;default:'user'"` // admin, operator, user
+	LastSeen  time.Time      `json:"last_seen"` // Last activity time for online status
 	CreatedAt time.Time      `json:"created_at"`
 	UpdatedAt time.Time      `json:"updated_at"`
 	DeletedAt gorm.DeletedAt `json:"-" gorm:"index"`

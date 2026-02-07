@@ -6,6 +6,8 @@ export interface User {
   username: string
   name: string
   role: string
+  created_at?: string
+  last_seen?: string
 }
 
 export const useUserStore = defineStore('user', () => {

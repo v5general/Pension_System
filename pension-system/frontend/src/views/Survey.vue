@@ -59,16 +59,22 @@
 
     <!-- Create Survey Dialog -->
     <el-dialog v-model="showCreateDialog" title="新建调查" width="600px">
-      <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
+      <el-form ref="formRef" :model="form" :rules="rules" label-width="120px">
         <el-form-item label="调查标题" prop="title">
           <el-input v-model="form.title" placeholder="请输入调查标题" />
         </el-form-item>
         <el-form-item label="调查描述" prop="description">
-          <el-input v-model="form.description" type="textarea" :rows="3" placeholder="请输入调查描述" />
+          <el-input v-model="form.description" type="textarea" :rows="3" placeholder="请输入调查描述（可选）" />
         </el-form-item>
-        <el-form-item label="选项" prop="options">
+        <el-form-item label="调查选项" prop="options" required>
+          <div style="margin-bottom: 8px; color: #909399; font-size: 12px;">
+            请填写调查的可选答案，至少需要2个选项
+          </div>
           <div v-for="(_option, index) in options" :key="index" style="margin-bottom: 10px">
-            <el-input v-model="options[index]" placeholder="请输入选项">
+            <el-input v-model="options[index]" :placeholder="`选项 ${index + 1}`">
+              <template #prepend>
+                <span style="width: 60px; text-align: center">选项{{ index + 1 }}</span>
+              </template>
               <template #append>
                 <el-button :icon="Delete" @click="removeOption(index)" />
               </template>
@@ -94,8 +100,12 @@
     <!-- Results Dialog -->
     <el-dialog v-model="showResultsDialog" title="调查结果" width="600px">
       <div v-if="currentResults">
-        <h3>{{ currentSurvey?.title }}</h3>
-        <div ref="chartRef" style="width: 100%; height: 400px; margin-top: 20px"></div>
+        <h3 style="margin-bottom: 8px">{{ currentSurvey?.title }}</h3>
+        <p style="color: #606060; margin-bottom: 20px">
+          总投票数: <strong>{{ currentResults.total_votes || 0 }}</strong>
+        </p>
+        <div v-if="currentResults.total_votes > 0" ref="chartRef" style="width: 100%; height: 400px; margin-top: 20px"></div>
+        <el-empty v-else description="暂无投票数据" :image-size="200" />
       </div>
     </el-dialog>
   </div>
@@ -188,9 +198,11 @@ const removeOption = (index: number) => {
 const handleCreate = async () => {
   if (!formRef.value) return
 
+  // First validate form fields
   await formRef.value.validate(async (valid) => {
     if (!valid) return
 
+    // Then validate options separately
     const validOptions = options.value.filter(o => o.trim() !== '')
     if (validOptions.length < 2) {
       ElMessage.warning('请至少填写两个有效选项')
@@ -220,6 +232,10 @@ const handleCreate = async () => {
         showCreateDialog.value = false
         formRef.value?.resetFields()
         options.value = ['', '']
+        form.title = ''
+        form.description = ''
+        form.startDate = ''
+        form.endDate = ''
         loadSurveys()
       } else {
         ElMessage.error(response.message)
@@ -271,6 +287,8 @@ const viewResults = async (survey: any) => {
       showResultsDialog.value = true
       await nextTick()
       initChart()
+    } else {
+      ElMessage.error(response.message || '加载结果失败')
     }
   } catch (error) {
     ElMessage.error('加载结果失败')
@@ -278,17 +296,34 @@ const viewResults = async (survey: any) => {
 }
 
 const initChart = () => {
-  if (!chartRef.value || !currentResults.value) return
+  if (!chartRef.value || !currentResults.value || !currentSurvey.value) return
+  if (!currentResults.value.total_votes || currentResults.value.total_votes === 0) return
 
   if (!chart) {
     chart = echarts.init(chartRef.value)
   }
 
-  const optionList = JSON.parse(currentSurvey.value.options || '[]')
+  // Parse options from survey - handle both string and already parsed data
+  let optionList: string[] = []
+  try {
+    if (typeof currentSurvey.value.options === 'string') {
+      optionList = JSON.parse(currentSurvey.value.options || '[]')
+    } else if (Array.isArray(currentSurvey.value.options)) {
+      optionList = currentSurvey.value.options
+    }
+  } catch (e) {
+    console.error('Failed to parse options:', e)
+    optionList = []
+  }
+
+  // Build data for chart
   const data = optionList.map((option: string) => ({
     name: option,
-    value: currentResults.value.option_counts[option] || 0
+    value: currentResults.value.option_counts?.[option] || 0
   }))
+
+  // Dark cyan-blue color palette
+  const colors = ['#0369a1', '#0891b2', '#0d9488', '#06b6d4', '#1d4ed8', '#0284c7', '#14b8a6', '#4f46e5']
 
   chart.setOption({
     tooltip: {
@@ -298,15 +333,36 @@ const initChart = () => {
     legend: {
       orient: 'vertical',
       right: 10,
-      top: 'center'
+      top: 'center',
+      textStyle: { color: '#606060' }
     },
+    color: colors,
     series: [{
       type: 'pie',
       radius: ['40%', '70%'],
       data,
+      itemStyle: {
+        borderRadius: 8,
+        borderColor: '#fff',
+        borderWidth: 2
+      },
       label: {
         show: true,
-        formatter: '{b}: {c} ({d}%)'
+        formatter: '{b}\n{c}票 ({d}%)',
+        fontSize: 13,
+        color: '#606060'
+      },
+      emphasis: {
+        label: {
+          show: true,
+          fontSize: 16,
+          fontWeight: 'bold'
+        },
+        itemStyle: {
+          shadowBlur: 15,
+          shadowOffsetX: 0,
+          shadowColor: 'rgba(3, 105, 161, 0.4)'
+        }
       }
     }]
   })

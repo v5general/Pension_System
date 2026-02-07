@@ -28,6 +28,12 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '数据管理', requiresAdmin: true }
       },
       {
+        path: 'user-manage',
+        name: 'UserManage',
+        component: () => import('@/views/UserManage.vue'),
+        meta: { title: '用户管理', requiresAdmin: true }
+      },
+      {
         path: 'data-form',
         name: 'DataForm',
         component: () => import('@/views/DataForm.vue'),
@@ -44,6 +50,12 @@ const routes: RouteRecordRaw[] = [
         name: 'Issue',
         component: () => import('@/views/Issue.vue'),
         meta: { title: '问题收集' }
+      },
+      {
+        path: 'account',
+        name: 'Account',
+        component: () => import('@/views/Account.vue'),
+        meta: { title: '账户设置' }
       }
     ]
   }

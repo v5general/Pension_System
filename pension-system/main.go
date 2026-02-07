@@ -50,6 +50,7 @@ func main() {
 	dataController := controllers.NewDataController()
 	surveyController := controllers.NewSurveyController()
 	issueController := controllers.NewIssueController()
+	accountController := controllers.NewAccountController()
 
 	// Create application with options
 	err = wails.Run(&options.App{
@@ -70,6 +71,7 @@ func main() {
 			dataController,
 			surveyController,
 			issueController,
+			accountController,
 		},
 	})
 

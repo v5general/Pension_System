@@ -263,6 +263,7 @@ func (c *DataController) GetSummary() (string, error) {
 			END as age_group,
 			COUNT(*) as count
 		FROM elderly
+		WHERE deleted_at IS NULL
 		GROUP BY age_group
 	`).Scan(&ageData)
 
