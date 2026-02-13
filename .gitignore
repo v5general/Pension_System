@@ -46,3 +46,4 @@ frontend/wailsjs/
 # Temporary files
 *.tmp
 genhash.go
+.claude/settings.local.json
