@@ -66,7 +66,7 @@
         <el-form-item label="调查描述" prop="description">
           <el-input v-model="form.description" type="textarea" :rows="3" placeholder="请输入调查描述（可选）" />
         </el-form-item>
-        <el-form-item label="调查选项" prop="options" required>
+        <el-form-item label="调查选项" required>
           <div style="margin-bottom: 8px; color: #909399; font-size: 12px;">
             请填写调查的可选答案，至少需要2个选项
           </div>
@@ -198,11 +198,9 @@ const removeOption = (index: number) => {
 const handleCreate = async () => {
   if (!formRef.value) return
 
-  // First validate form fields
   await formRef.value.validate(async (valid) => {
     if (!valid) return
 
-    // Then validate options separately
     const validOptions = options.value.filter(o => o.trim() !== '')
     if (validOptions.length < 2) {
       ElMessage.warning('请至少填写两个有效选项')
@@ -211,12 +209,17 @@ const handleCreate = async () => {
 
     submitLoading.value = true
     try {
-      const startDate = typeof form.startDate === 'string'
-        ? form.startDate
-        : (form.startDate as Date).toISOString().split('T')[0]
-      const endDate = typeof form.endDate === 'string'
-        ? form.endDate
-        : (form.endDate as Date).toISOString().split('T')[0]
+      const formatDate = (date: Date | string): string => {
+        if (!date) return ''
+        if (typeof date === 'string') return date
+        const d = new Date(date)
+        const year = d.getFullYear()
+        const month = String(d.getMonth() + 1).padStart(2, '0')
+        const day = String(d.getDate()).padStart(2, '0')
+        return `${year}-${month}-${day}`
+      }
+      const startDate = formatDate(form.startDate)
+      const endDate = formatDate(form.endDate)
 
       const response = await api.createSurvey(
         form.title,
@@ -303,7 +306,6 @@ const initChart = () => {
     chart = echarts.init(chartRef.value)
   }
 
-  // Parse options from survey - handle both string and already parsed data
   let optionList: string[] = []
   try {
     if (typeof currentSurvey.value.options === 'string') {
@@ -316,13 +318,11 @@ const initChart = () => {
     optionList = []
   }
 
-  // Build data for chart
   const data = optionList.map((option: string) => ({
     name: option,
     value: currentResults.value.option_counts?.[option] || 0
   }))
 
-  // Dark cyan-blue color palette
   const colors = ['#0369a1', '#0891b2', '#0d9488', '#06b6d4', '#1d4ed8', '#0284c7', '#14b8a6', '#4f46e5']
 
   chart.setOption({

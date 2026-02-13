@@ -16,8 +16,8 @@
             {{ (currentPage - 1) * pageSize + $index + 1 }}
           </template>
         </el-table-column>
-        <el-table-column prop="name" label="用户名" min-width="120" />
-        <el-table-column prop="username" label="账号" min-width="120" />
+        <el-table-column prop="name" label="账号" min-width="120" />
+        <el-table-column prop="username" label="用户名" min-width="120" />
         <el-table-column prop="role" label="角色" width="100">
           <template #default="{ row }">
             <el-tag :type="row.role === 'admin' ? 'danger' : 'primary'">
@@ -121,7 +121,7 @@ const loadUsers = async () => {
 
 const handleDeleteUser = (user: any) => {
   ElMessageBox.confirm(
-    `确定要注销用户「${user.name}」的账号吗？注销后该用户将无法登录系统，此操作不可恢复！`,
+    `确定要注销用户「${user.username}」的账号吗？注销后该用户将无法登录系统，此操作不可恢复！`,
     '注销用户账号',
     {
       confirmButtonText: '确定注销',
@@ -146,7 +146,7 @@ const handleDeleteUser = (user: any) => {
 
 const handleResetPassword = (user: any) => {
   ElMessageBox.confirm(
-    `确定要将用户「${user.name}」的密码重置为 123456 吗？`,
+    `确定要将用户「${user.username}」的密码重置为 123456 吗？`,
     '重置密码',
     {
       confirmButtonText: '确定重置',

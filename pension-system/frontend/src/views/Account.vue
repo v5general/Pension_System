@@ -32,22 +32,44 @@
             </div>
           </template>
 
-          <!-- 修改用户名 -->
+          <!-- 修改账号名 -->
           <div class="action-section">
             <h3 class="section-title">
               <el-icon><Edit /></el-icon>
-              修改用户名
+              修改账号名
             </h3>
-            <p class="section-desc">修改您在系统中显示的用户名</p>
+            <p class="section-desc">修改您的账号名（账号名唯一，用于系统显示）</p>
             <el-form ref="nameFormRef" :model="nameForm" :rules="nameRules" label-width="100px" class="action-form">
-              <el-form-item label="新用户名" prop="newName">
-                <el-input v-model="nameForm.newName" placeholder="请输入新用户名" />
+              <el-form-item label="新账号名" prop="newName">
+                <el-input v-model="nameForm.newName" placeholder="请输入新账号名" />
               </el-form-item>
               <el-form-item label="确认密码" prop="password">
                 <el-input v-model="nameForm.password" type="password" placeholder="请输入当前密码" />
               </el-form-item>
               <el-form-item>
                 <el-button type="primary" :loading="nameLoading" @click="handleUpdateName">保存修改</el-button>
+              </el-form-item>
+            </el-form>
+          </div>
+
+          <el-divider />
+
+          <!-- 修改用户名 -->
+          <div class="action-section">
+            <h3 class="section-title">
+              <el-icon><Edit /></el-icon>
+              修改用户名
+            </h3>
+            <p class="section-desc">修改您的登录用户名</p>
+            <el-form ref="usernameFormRef" :model="usernameForm" :rules="usernameRules" label-width="100px" class="action-form">
+              <el-form-item label="新用户名" prop="newUsername">
+                <el-input v-model="usernameForm.newUsername" placeholder="请输入新用户名" />
+              </el-form-item>
+              <el-form-item label="确认密码" prop="password">
+                <el-input v-model="usernameForm.password" type="password" placeholder="请输入当前密码" />
+              </el-form-item>
+              <el-form-item>
+                <el-button type="primary" :loading="usernameLoading" @click="handleUpdateUsername">保存修改</el-button>
               </el-form-item>
             </el-form>
           </div>
@@ -127,15 +149,22 @@ const router = useRouter()
 const userStore = useUserStore()
 
 const nameFormRef = ref<FormInstance>()
+const usernameFormRef = ref<FormInstance>()
 const passwordFormRef = ref<FormInstance>()
 const deleteFormRef = ref<FormInstance>()
 
 const nameLoading = ref(false)
+const usernameLoading = ref(false)
 const passwordLoading = ref(false)
 const deleteLoading = ref(false)
 
 const nameForm = reactive({
   newName: '',
+  password: ''
+})
+
+const usernameForm = reactive({
+  newUsername: '',
   password: ''
 })
 
@@ -152,8 +181,8 @@ const deleteForm = reactive({
 
 const nameRules: FormRules = {
   newName: [
-    { required: true, message: '请输入新用户名', trigger: 'blur' },
-    { min: 2, max: 20, message: '用户名长度为2-20个字符', trigger: 'blur' }
+    { required: true, message: '请输入新账号名', trigger: 'blur' },
+    { min: 2, max: 20, message: '账号名长度为2-20个字符', trigger: 'blur' }
   ],
   password: [{ required: true, message: '请输入当前密码', trigger: 'blur' }]
 }
@@ -196,6 +225,14 @@ const deleteRules: FormRules = {
   ]
 }
 
+const usernameRules: FormRules = {
+  newUsername: [
+    { required: true, message: '请输入新用户名', trigger: 'blur' },
+    { min: 2, max: 20, message: '用户名长度为2-20个字符', trigger: 'blur' }
+  ],
+  password: [{ required: true, message: '请输入当前密码', trigger: 'blur' }]
+}
+
 const getRoleName = (role?: string) => {
   const roleMap: Record<string, string> = {
     admin: '管理员',
@@ -221,7 +258,7 @@ const handleUpdateName = async () => {
       const response = await api.updateName(nameForm.newName, nameForm.password, userStore.user?.id || 1)
       if (response.success) {
         userStore.setUser(response.user)
-        ElMessage.success('用户名修改成功')
+        ElMessage.success('账号名修改成功')
         nameFormRef.value?.resetFields()
       } else {
         ElMessage.error(response.message)
@@ -230,6 +267,30 @@ const handleUpdateName = async () => {
       ElMessage.error('修改失败，请检查网络连接')
     } finally {
       nameLoading.value = false
+    }
+  })
+}
+
+const handleUpdateUsername = async () => {
+  if (!usernameFormRef.value) return
+
+  await usernameFormRef.value.validate(async (valid) => {
+    if (!valid) return
+
+    usernameLoading.value = true
+    try {
+      const response = await api.updateUsername(usernameForm.newUsername, usernameForm.password, userStore.user?.id || 1)
+      if (response.success) {
+        userStore.setUser(response.user)
+        ElMessage.success('用户名修改成功')
+        usernameFormRef.value?.resetFields()
+      } else {
+        ElMessage.error(response.message)
+      }
+    } catch (error) {
+      ElMessage.error('修改失败，请检查网络连接')
+    } finally {
+      usernameLoading.value = false
     }
   })
 }

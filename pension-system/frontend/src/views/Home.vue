@@ -24,11 +24,19 @@
             </div>
           </template>
         </el-menu-item>
-        <el-menu-item index="/data-form">
+        <el-menu-item index="/data-form" v-if="userStore.isAdmin()">
           <template #title>
             <div class="menu-item-content">
               <el-icon><DocumentAdd /></el-icon>
               <span>数据录入</span>
+            </div>
+          </template>
+        </el-menu-item>
+        <el-menu-item index="/my-data" v-if="!userStore.isAdmin()">
+          <template #title>
+            <div class="menu-item-content">
+              <el-icon><Document /></el-icon>
+              <span>我的数据</span>
             </div>
           </template>
         </el-menu-item>
@@ -107,7 +115,7 @@ import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
-  DataBoard, DocumentAdd, DataAnalysis, ChatLineSquare,
+  DataBoard, DocumentAdd, Document, DataAnalysis, ChatLineSquare,
   Management, UserFilled, Avatar, SwitchButton, ArrowRight, User
 } from '@element-plus/icons-vue'
 import { useUserStore } from '@/store/user'

@@ -32,15 +32,18 @@ func main() {
 		return
 	}
 
+	// Drop unique index on users.name if it exists (to allow reuse of deleted account names)
+	db.Exec("DROP INDEX IF EXISTS idx_users_name")
+
 	// Create default admin user if not exists
 	var adminCount int64
 	db.Model(&models.User{}).Where("role = ?", "admin").Count(&adminCount)
 	if adminCount == 0 {
 		admin := &models.User{
-			Username: "admin",
+			Username: "系统管理员",  // 用户名（用于显示）
 			Password: "$2a$10$iuy7mUFrqmFHswp.SvQuze7UtY/sl0qmZsTDoM3IcNclMG4E8e3dC", // admin123
 			Role:     "admin",
-			Name:     "系统管理员",
+			Name:     "admin",  // 账户名（用于登录）
 		}
 		db.Create(admin)
 	}

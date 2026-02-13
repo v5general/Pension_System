@@ -12,3 +12,5 @@ export function ResetUserPassword(arg1:number):Promise<string>;
 export function UpdateName(arg1:string,arg2:string,arg3:number):Promise<string>;
 
 export function UpdatePassword(arg1:string,arg2:string,arg3:number):Promise<string>;
+
+export function UpdateUsername(arg1:string,arg2:string,arg3:number):Promise<string>;

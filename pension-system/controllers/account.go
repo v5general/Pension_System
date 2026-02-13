@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"pension-system/database"
 	"pension-system/models"
+	"strings"
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
@@ -49,13 +50,13 @@ func (c *AccountController) UpdateName(newName, password string, userId uint) (s
 		return string(data), nil
 	}
 
-	// Check if new name is already taken
+	// Check if new account name already exists
 	var existingUser models.User
-	c.db.Where("username = ? AND id != ?", newName, userId).First(&existingUser)
+	c.db.Where("name = ? AND id != ?", newName, userId).First(&existingUser)
 	if existingUser.ID != 0 {
 		resp := AccountResponse{
 			Success: false,
-			Message: "该用户名已被使用",
+			Message: "账户名已存在，请使用其他名称",
 		}
 		data, _ := json.Marshal(resp)
 		return string(data), nil
@@ -63,6 +64,67 @@ func (c *AccountController) UpdateName(newName, password string, userId uint) (s
 
 	// Update name
 	result = c.db.Model(&user).Update("name", newName)
+	if result.Error != nil {
+		// Check if it's a unique constraint violation
+		if strings.Contains(result.Error.Error(), "UNIQUE constraint failed") ||
+		   strings.Contains(result.Error.Error(), "unique constraint") {
+			resp := AccountResponse{
+				Success: false,
+				Message: "账户名已存在，请使用其他名称",
+			}
+			data, _ := json.Marshal(resp)
+			return string(data), nil
+		}
+		resp := AccountResponse{
+			Success: false,
+			Message: "修改失败",
+		}
+		data, _ := json.Marshal(resp)
+		return string(data), result.Error
+	}
+
+	// Refresh user data
+	c.db.First(&user, userId)
+
+	resp := AccountResponse{
+		Success: true,
+		Message: "账户名修改成功",
+		User:    &user,
+	}
+
+	data, err := json.Marshal(resp)
+	if err != nil {
+		return "", err
+	}
+
+	return string(data), nil
+}
+
+// UpdateUsername updates user's login username
+func (c *AccountController) UpdateUsername(newUsername, password string, userId uint) (string, error) {
+	var user models.User
+	result := c.db.First(&user, userId)
+	if result.Error != nil {
+		resp := AccountResponse{
+			Success: false,
+			Message: "用户不存在",
+		}
+		data, _ := json.Marshal(resp)
+		return string(data), result.Error
+	}
+
+	// Verify password
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
+		resp := AccountResponse{
+			Success: false,
+			Message: "当前密码错误",
+		}
+		data, _ := json.Marshal(resp)
+		return string(data), nil
+	}
+
+	// Update username (no uniqueness check needed)
+	result = c.db.Model(&user).Update("username", newUsername)
 	if result.Error != nil {
 		resp := AccountResponse{
 			Success: false,

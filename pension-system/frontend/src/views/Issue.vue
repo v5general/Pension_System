@@ -8,81 +8,78 @@
         </div>
       </template>
 
-      <el-tabs v-model="activeTab" @tab-change="handleTabChange">
-        <el-tab-pane label="全部" name="all"></el-tab-pane>
-        <el-tab-pane label="待处理" name="pending"></el-tab-pane>
-        <el-tab-pane label="处理中" name="processing"></el-tab-pane>
-        <el-tab-pane label="已解决" name="resolved"></el-tab-pane>
-        <el-tab-pane label="已关闭" name="closed"></el-tab-pane>
+      <el-tabs v-model="activeTab" @tab-change="handleTabChange" class="issue-tabs">
+        <el-tab-pane label="全部" name="all">
+          <IssueTable
+            :issues="issues"
+            :loading="loading"
+            :current-page="currentPage"
+            :page-size="pageSize"
+            :total="total"
+            @view-detail="viewDetail"
+            @respond-issue="respondToIssue"
+            @close-issue="closeIssue"
+            @delete-issue="deleteIssue"
+            @page-change="loadIssues"
+          />
+        </el-tab-pane>
+        <el-tab-pane label="待处理" name="pending">
+          <IssueTable
+            :issues="issues"
+            :loading="loading"
+            :current-page="currentPage"
+            :page-size="pageSize"
+            :total="total"
+            @view-detail="viewDetail"
+            @respond-issue="respondToIssue"
+            @close-issue="closeIssue"
+            @delete-issue="deleteIssue"
+            @page-change="loadIssues"
+          />
+        </el-tab-pane>
+        <el-tab-pane label="处理中" name="processing">
+          <IssueTable
+            :issues="issues"
+            :loading="loading"
+            :current-page="currentPage"
+            :page-size="pageSize"
+            :total="total"
+            @view-detail="viewDetail"
+            @respond-issue="respondToIssue"
+            @close-issue="closeIssue"
+            @delete-issue="deleteIssue"
+            @page-change="loadIssues"
+          />
+        </el-tab-pane>
+        <el-tab-pane label="已解决" name="resolved">
+          <IssueTable
+            :issues="issues"
+            :loading="loading"
+            :current-page="currentPage"
+            :page-size="pageSize"
+            :total="total"
+            @view-detail="viewDetail"
+            @respond-issue="respondToIssue"
+            @close-issue="closeIssue"
+            @delete-issue="deleteIssue"
+            @page-change="loadIssues"
+          />
+        </el-tab-pane>
+        <el-tab-pane label="已关闭" name="closed">
+          <IssueTable
+            :issues="issues"
+            :loading="loading"
+            :current-page="currentPage"
+            :page-size="pageSize"
+            :total="total"
+            @view-detail="viewDetail"
+            @respond-issue="respondToIssue"
+            @close-issue="closeIssue"
+            @delete-issue="deleteIssue"
+            @page-change="loadIssues"
+          />
+        </el-tab-pane>
       </el-tabs>
-
-      <el-table :data="issues" border style="width: 100%; margin-top: 20px" v-loading="loading">
-        <el-table-column label="序号" width="80" align="center">
-          <template #default="{ $index }">
-            {{ (currentPage - 1) * pageSize + $index + 1 }}
-          </template>
-        </el-table-column>
-        <el-table-column prop="title" label="问题标题" min-width="200" />
-        <el-table-column prop="category" label="分类" width="120">
-          <template #default="{ row }">
-            <el-tag>{{ row.category }}</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="priority" label="优先级" width="100">
-          <template #default="{ row }">
-            <el-tag :type="getPriorityType(row.priority)">{{ getPriorityText(row.priority) }}</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="status" label="状态" width="100">
-          <template #default="{ row }">
-            <el-tag :type="getStatusType(row.status)">{{ getStatusText(row.status) }}</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="submitter.name" label="提交人" width="100" />
-        <el-table-column prop="created_at" label="提交时间" width="180">
-          <template #default="{ row }">
-            {{ formatDateTime(row.created_at) }}
-          </template>
-        </el-table-column>
-        <el-table-column label="操作" width="280" fixed="right">
-          <template #default="{ row }">
-            <el-button size="small" @click="viewDetail(row)">详情</el-button>
-            <el-button
-              v-if="row.status !== 'closed'"
-              type="success"
-              size="small"
-              @click="respondToIssue(row)"
-            >
-              回复
-            </el-button>
-            <el-button
-              v-if="row.status !== 'closed' && isAdmin"
-              type="danger"
-              size="small"
-              @click="closeIssue(row)"
-            >
-              关闭
-            </el-button>
-            <el-button
-              v-if="isAdmin"
-              type="danger"
-              size="small"
-              @click="deleteIssue(row)"
-            >
-              删除
-            </el-button>
-          </template>
-        </el-table-column>
-      </el-table>
-
-      <el-pagination
-        v-model:current-page="currentPage"
-        v-model:page-size="pageSize"
-        :total="total"
-        layout="total, prev, pager, next"
-        style="margin-top: 20px"
-        @current-change="loadIssues"
-      />
     </el-card>
 
     <!-- Create Issue Dialog -->
@@ -158,13 +155,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive } from 'vue'
 import { ElMessage, ElMessageBox, FormInstance, FormRules } from 'element-plus'
 import { useUserStore } from '@/store/user'
 import api from '@/api'
+import IssueTable from '@/components/IssueTable.vue'
 
 const userStore = useUserStore()
-const isAdmin = computed(() => userStore.isAdmin())
 
 const loading = ref(false)
 const submitLoading = ref(false)
@@ -392,5 +389,9 @@ loadIssues()
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.issue-tabs {
+  margin-top: 16px;
 }
 </style>

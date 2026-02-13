@@ -18,6 +18,10 @@ export function GetElderlyList(arg1, arg2, arg3) {
   return window['go']['controllers']['DataController']['GetElderlyList'](arg1, arg2, arg3);
 }
 
+export function GetMyElderlyList(arg1, arg2, arg3, arg4) {
+  return window['go']['controllers']['DataController']['GetMyElderlyList'](arg1, arg2, arg3, arg4);
+}
+
 export function GetSummary() {
   return window['go']['controllers']['DataController']['GetSummary']();
 }

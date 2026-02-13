@@ -9,6 +9,8 @@ export function GetElderly(arg1:number):Promise<string>;
 
 export function GetElderlyList(arg1:number,arg2:number,arg3:string):Promise<string>;
 
+export function GetMyElderlyList(arg1:number,arg2:number,arg3:string,arg4:number):Promise<string>;
+
 export function GetSummary():Promise<string>;
 
 export function UpdateElderly(arg1:number,arg2:string):Promise<string>;

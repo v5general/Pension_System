@@ -6,8 +6,8 @@ import * as AccountController from '../../wailsjs/go/controllers/AccountControll
 
 class ApiClient {
   // Auth APIs
-  async login(username: string, password: string) {
-    const result = await AuthController.Login(username, password)
+  async login(name: string, password: string) {
+    const result = await AuthController.Login(name, password)
     return JSON.parse(result)
   }
 
@@ -24,6 +24,11 @@ class ApiClient {
   // Data APIs
   async getElderlyList(page: number, pageSize: number, keyword: string = '') {
     const result = await DataController.GetElderlyList(page, pageSize, keyword)
+    return JSON.parse(result)
+  }
+
+  async getMyElderlyList(page: number, pageSize: number, keyword: string = '', userId: number) {
+    const result = await DataController.GetMyElderlyList(page, pageSize, keyword, userId)
     return JSON.parse(result)
   }
 
@@ -132,6 +137,11 @@ class ApiClient {
   // Account APIs
   async updateName(newName: string, password: string, userId: number) {
     const result = await AccountController.UpdateName(newName, password, userId)
+    return JSON.parse(result)
+  }
+
+  async updateUsername(newUsername: string, password: string, userId: number) {
+    const result = await AccountController.UpdateUsername(newUsername, password, userId)
     return JSON.parse(result)
   }
 

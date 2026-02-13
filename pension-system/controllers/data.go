@@ -231,6 +231,48 @@ func (c *DataController) DeleteElderly(id uint) (string, error) {
 	return string(data), nil
 }
 
+// GetMyElderlyList returns elderly records filtered by recorder_id
+func (c *DataController) GetMyElderlyList(page, pageSize int, keyword string, recorderID uint) (string, error) {
+	var elderly []models.Elderly
+	var total int64
+
+	query := c.db.Model(&models.Elderly{}).Where("recorder_id = ?", recorderID)
+
+	if keyword != "" {
+		query = query.Where("name LIKE ? OR id_card LIKE ? OR phone LIKE ?",
+			"%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%")
+	}
+
+	query.Count(&total)
+
+	offset := (page - 1) * pageSize
+	result := query.Preload("Recorder").Offset(offset).Limit(pageSize).Find(&elderly)
+
+	if result.Error != nil {
+		resp := ElderlyListResponse{
+			Success: false,
+			Message: "获取数据失败",
+			Total:   0,
+		}
+		data, _ := json.Marshal(resp)
+		return string(data), result.Error
+	}
+
+	resp := ElderlyListResponse{
+		Success: true,
+		Message: "获取成功",
+		Data:    elderly,
+		Total:   total,
+	}
+
+	data, err := json.Marshal(resp)
+	if err != nil {
+		return "", err
+	}
+
+	return string(data), nil
+}
+
 // GetSummary returns summary statistics
 func (c *DataController) GetSummary() (string, error) {
 	var totalElderly int64

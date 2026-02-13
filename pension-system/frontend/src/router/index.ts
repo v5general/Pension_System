@@ -37,13 +37,19 @@ const routes: RouteRecordRaw[] = [
         path: 'data-form',
         name: 'DataForm',
         component: () => import('@/views/DataForm.vue'),
-        meta: { title: '数据录入' }
+        meta: { title: '数据录入', requiresAdmin: true }
+      },
+      {
+        path: 'my-data',
+        name: 'MyData',
+        component: () => import('@/views/MyData.vue'),
+        meta: { title: '我的数据' }
       },
       {
         path: 'survey',
         name: 'Survey',
         component: () => import('@/views/Survey.vue'),
-        meta: { title: '民意调查' }
+        meta: { title: '民意调查', requiresAdmin: true }
       },
       {
         path: 'issue',

@@ -39,10 +39,10 @@
         </div>
 
         <el-form ref="loginFormRef" :model="loginForm" :rules="rules" class="login-form">
-          <el-form-item prop="username">
+          <el-form-item prop="name">
             <el-input
-              v-model="loginForm.username"
-              placeholder="用户名"
+              v-model="loginForm.name"
+              placeholder="账户名"
               size="large"
               class="modern-input"
             >
@@ -111,8 +111,8 @@
             </template>
           </el-input>
         </el-form-item>
-        <el-form-item label="姓名" prop="name">
-          <el-input v-model="registerForm.name" placeholder="请输入真实姓名">
+        <el-form-item label="账户名" prop="name">
+          <el-input v-model="registerForm.name" placeholder="请输入账户名">
             <template #prefix>
               <el-icon><Avatar /></el-icon>
             </template>
@@ -166,7 +166,7 @@ const registerLoading = ref(false)
 const showRegister = ref(false)
 
 const loginForm = reactive({
-  username: '',
+  name: '',
   password: ''
 })
 
@@ -178,7 +178,7 @@ const registerForm = reactive({
 })
 
 const rules: FormRules = {
-  username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
+  name: [{ required: true, message: '请输入账户名', trigger: 'blur' }],
   password: [{ required: true, message: '请输入密码', trigger: 'blur' }]
 }
 
@@ -215,7 +215,7 @@ const handleLogin = async () => {
 
     loading.value = true
     try {
-      const response = await api.login(loginForm.username, loginForm.password)
+      const response = await api.login(loginForm.name, loginForm.password)
       if (response.success) {
         userStore.setUser(response.user)
         ElMessage.success('登录成功')
@@ -247,7 +247,7 @@ const handleRegister = async () => {
       if (response.success) {
         ElMessage.success('注册成功，请登录')
         showRegister.value = false
-        loginForm.username = registerForm.username
+        loginForm.name = registerForm.name
         loginForm.password = ''
         registerFormRef.value?.resetFields()
       } else {
@@ -455,7 +455,9 @@ const handleRegister = async () => {
 
 .login-footer {
   width: 100%;
-  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-size: 14px;
   color: #606060;
 }

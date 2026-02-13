@@ -1,9 +1,9 @@
 <template>
-  <div class="data-form">
+  <div class="my-data">
     <el-card class="form-card">
       <template #header>
         <div class="card-header">
-          <span>{{ editId !== null ? '编辑老年人信息' : '老年人信息录入' }}</span>
+          <span>{{ editId !== null ? '编辑我的信息' : '录入我的信息' }}</span>
           <el-button v-if="editId !== null" @click="cancelEdit" size="small">取消编辑</el-button>
         </div>
       </template>
@@ -134,7 +134,7 @@
     <el-card class="list-card">
       <template #header>
         <div class="card-header">
-          <span>已录入数据列表</span>
+          <span>我的数据列表</span>
           <div class="header-actions">
             <el-input
               v-model="searchKeyword"
@@ -163,6 +163,11 @@
         <el-table-column prop="care_level" label="护理等级" width="100" />
         <el-table-column prop="economic_source" label="经济来源" width="100" />
         <el-table-column prop="address" label="地址" min-width="150" show-overflow-tooltip />
+        <el-table-column prop="created_at" label="录入时间" width="160">
+          <template #default="{ row }">
+            {{ formatDateTime(row.created_at) }}
+          </template>
+        </el-table-column>
         <el-table-column label="操作" width="180" fixed="right">
           <template #default="{ row }">
             <el-button type="primary" size="small" @click="handleEdit(row)" :icon="Edit">编辑</el-button>
@@ -189,8 +194,10 @@
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox, FormInstance, FormRules } from 'element-plus'
 import { Search, Edit, Delete } from '@element-plus/icons-vue'
+import { useUserStore } from '@/store/user'
 import api from '@/api'
 
+const userStore = useUserStore()
 const formRef = ref<FormInstance>()
 const submitLoading = ref(false)
 const loading = ref(false)
@@ -200,6 +207,9 @@ const currentPage = ref(1)
 const pageSize = ref(10)
 const total = ref(0)
 const editId = ref<number | null>(null)
+
+// Get current user ID
+const currentUserId = ref<number>(1)
 
 const formData = reactive({
   name: '',
@@ -225,7 +235,7 @@ const rules: FormRules = {
 const loadData = async () => {
   loading.value = true
   try {
-    const response = await api.getElderlyList(currentPage.value, pageSize.value, searchKeyword.value)
+    const response = await api.getMyElderlyList(currentPage.value, pageSize.value, searchKeyword.value, currentUserId.value)
     if (response.success) {
       tableData.value = response.data || []
       total.value = response.total || 0
@@ -245,10 +255,9 @@ const handleSubmit = async () => {
 
     submitLoading.value = true
     try {
-      // Convert empty strings to null for nullable fields
       const data = {
         ...formData,
-        recorder_id: 1,
+        recorder_id: currentUserId.value,
         id_card: formData.id_card || null,
         phone: formData.phone || null,
         address: formData.address || null,
@@ -306,6 +315,12 @@ const cancelEdit = () => {
 }
 
 const handleEdit = (row: any) => {
+  // Check if the record belongs to current user
+  if (row.recorder_id !== currentUserId.value) {
+    ElMessage.warning('您只能编辑自己录入的数据')
+    return
+  }
+
   editId.value = row.id
   Object.assign(formData, {
     name: row.name || '',
@@ -327,6 +342,12 @@ const handleEdit = (row: any) => {
 }
 
 const handleDelete = (row: any) => {
+  // Check if the record belongs to current user
+  if (row.recorder_id !== currentUserId.value) {
+    ElMessage.warning('您只能删除自己录入的数据')
+    return
+  }
+
   ElMessageBox.confirm('确定要删除这条记录吗？', '提示', {
     confirmButtonText: '确定',
     cancelButtonText: '取消',
@@ -336,7 +357,6 @@ const handleDelete = (row: any) => {
       const response = await api.deleteElderly(row.id)
       if (response.success) {
         ElMessage.success('删除成功')
-        // If deleting the currently edited item, reset form
         if (editId.value === row.id) {
           handleReset()
         }
@@ -348,17 +368,27 @@ const handleDelete = (row: any) => {
   }).catch(() => {})
 }
 
+const formatDateTime = (date: string) => {
+  if (!date) return ''
+  return new Date(date).toLocaleString('zh-CN')
+}
+
 const tableRowClassName = ({ rowIndex }: { rowIndex: number }) => {
   return rowIndex % 2 === 0 ? 'even-row' : 'odd-row'
 }
 
 onMounted(() => {
+  // Get current user ID from store
+  const user = userStore.getUser()
+  if (user) {
+    currentUserId.value = user.id
+  }
   loadData()
 })
 </script>
 
 <style scoped>
-.data-form {
+.my-data {
   display: flex;
   flex-direction: column;
   gap: 20px;

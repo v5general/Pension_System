@@ -5,6 +5,7 @@ import (
 	"pension-system/database"
 	"pension-system/models"
 	"pension-system/utils"
+	"strings"
 
 	"gorm.io/gorm"
 )
@@ -27,7 +28,7 @@ type LoginRequest struct {
 type RegisterRequest struct {
 	Username string `json:"username" binding:"required"`
 	Password string `json:"password" binding:"required"`
-	Name     string `json:"name" binding:"required"`
+	Name     string `json:"name" binding:"required"` // 这是账户名，需要唯一
 }
 
 type LoginResponse struct {
@@ -43,14 +44,14 @@ type UserResponse struct {
 	Role     string `json:"role"`
 }
 
-// Login handles user login
-func (c *AuthController) Login(username, password string) (string, error) {
+// Login handles user login (use name/account for login)
+func (c *AuthController) Login(name, password string) (string, error) {
 	var user models.User
-	result := c.db.Where("username = ?", username).First(&user)
+	result := c.db.Where("name = ?", name).First(&user)
 	if result.Error != nil {
 		resp := LoginResponse{
 			Success: false,
-			Message: "用户名或密码错误",
+			Message: "账户名或密码错误",
 		}
 		data, _ := json.Marshal(resp)
 		return string(data), result.Error
@@ -59,7 +60,7 @@ func (c *AuthController) Login(username, password string) (string, error) {
 	if !utils.CheckPassword(password, user.Password) {
 		resp := LoginResponse{
 			Success: false,
-			Message: "用户名或密码错误",
+			Message: "账户名或密码错误",
 		}
 		data, _ := json.Marshal(resp)
 		return string(data), nil
@@ -86,13 +87,23 @@ func (c *AuthController) Login(username, password string) (string, error) {
 
 // Register handles user registration
 func (c *AuthController) Register(username, password, name string) (string, error) {
-	// Check if user already exists
+	// Check if account name (name field) already exists (excluding soft-deleted records)
 	var existingUser models.User
-	result := c.db.Where("username = ?", username).First(&existingUser)
+	result := c.db.Where("name = ?", name).First(&existingUser)
+	// Not found is OK, other errors are not
+	if result.Error != nil && result.Error != gorm.ErrRecordNotFound {
+		resp := LoginResponse{
+			Success: false,
+			Message: "注册失败",
+		}
+		data, _ := json.Marshal(resp)
+		return string(data), result.Error
+	}
+	// If found, it's a duplicate
 	if result.Error == nil {
 		resp := LoginResponse{
 			Success: false,
-			Message: "用户名已存在",
+			Message: "账户名已存在",
 		}
 		data, _ := json.Marshal(resp)
 		return string(data), nil
@@ -111,9 +122,18 @@ func (c *AuthController) Register(username, password, name string) (string, erro
 		Name:     name,
 		Role:     "user",
 	}
-
 	result = c.db.Create(&user)
 	if result.Error != nil {
+		// Check if it's a unique constraint violation
+		if strings.Contains(result.Error.Error(), "UNIQUE constraint failed: users.name") ||
+		   strings.Contains(result.Error.Error(), "unique constraint") {
+			resp := LoginResponse{
+				Success: false,
+				Message: "账户名已存在",
+			}
+			data, _ := json.Marshal(resp)
+			return string(data), nil
+		}
 		resp := LoginResponse{
 			Success: false,
 			Message: "注册失败",

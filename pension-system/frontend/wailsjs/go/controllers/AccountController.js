@@ -25,3 +25,7 @@ export function UpdateName(arg1, arg2, arg3) {
 export function UpdatePassword(arg1, arg2, arg3) {
   return window['go']['controllers']['AccountController']['UpdatePassword'](arg1, arg2, arg3);
 }
+
+export function UpdateUsername(arg1, arg2, arg3) {
+  return window['go']['controllers']['AccountController']['UpdateUsername'](arg1, arg2, arg3);
+}
