@@ -54,7 +54,7 @@ func (c *AuthController) Login(name, password string) (string, error) {
 			Message: "账户名或密码错误",
 		}
 		data, _ := json.Marshal(resp)
-		return string(data), result.Error
+		return string(data), nil // Return nil error so frontend can parse JSON
 	}
 
 	if !utils.CheckPassword(password, user.Password) {

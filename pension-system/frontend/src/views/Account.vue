@@ -9,7 +9,7 @@
               <el-icon :size="48"><Avatar /></el-icon>
             </div>
             <div class="profile-info">
-              <h2 class="profile-name">{{ userStore.user?.name }}</h2>
+              <h2 class="profile-name">{{ userStore.user?.username }}</h2>
               <p class="profile-role">{{ getRoleName(userStore.user?.role) }}</p>
             </div>
           </div>

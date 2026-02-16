@@ -49,7 +49,7 @@ const routes: RouteRecordRaw[] = [
         path: 'survey',
         name: 'Survey',
         component: () => import('@/views/Survey.vue'),
-        meta: { title: '民意调查', requiresAdmin: true }
+        meta: { title: '民意调查' }
       },
       {
         path: 'issue',

@@ -40,7 +40,7 @@
             </div>
           </template>
         </el-menu-item>
-        <el-menu-item index="/survey" v-if="userStore.isAdmin()">
+        <el-menu-item index="/survey">
           <template #title>
             <div class="menu-item-content">
               <el-icon><DataAnalysis /></el-icon>
@@ -80,7 +80,7 @@
             <el-icon><Avatar /></el-icon>
           </div>
           <div class="user-info">
-            <div class="user-name">{{ userStore.user?.name }}</div>
+            <div class="user-name">{{ userStore.user?.username }}</div>
             <div class="user-role">{{ getRoleName(userStore.user?.role) }}</div>
           </div>
           <div class="user-arrow">

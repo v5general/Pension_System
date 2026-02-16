@@ -208,10 +208,64 @@ func (c *SurveyController) UpdateSurveyStatus(id uint, status string) (string, e
 
 // Vote submits a vote for a survey
 func (c *SurveyController) Vote(surveyID uint, option string, userID uint) (string, error) {
+	// Debug logging
+	println("[DEBUG] Vote called - SurveyID:", surveyID, "Option:", option, "UserID:", userID)
+
+	// Validate user ID
+	if userID == 0 {
+		println("[DEBUG] Vote failed: userID is 0")
+		resp := SurveyResponse{
+			Success: false,
+			Message: "用户未登录，请先登录",
+		}
+		data, _ := json.Marshal(resp)
+		return string(data), nil
+	}
+
+	// Validate survey ID
+	if surveyID == 0 {
+		println("[DEBUG] Vote failed: surveyID is 0")
+		resp := SurveyResponse{
+			Success: false,
+			Message: "无效的调查",
+		}
+		data, _ := json.Marshal(resp)
+		return string(data), nil
+	}
+
+	// Validate option
+	if option == "" {
+		println("[DEBUG] Vote failed: option is empty")
+		resp := SurveyResponse{
+			Success: false,
+			Message: "请选择一个选项",
+		}
+		data, _ := json.Marshal(resp)
+		return string(data), nil
+	}
+
+	// Check if survey exists
+	var survey models.Survey
+	result := c.db.First(&survey, surveyID)
+	if result.Error != nil {
+		println("[DEBUG] Vote failed: survey not found, error:", result.Error.Error())
+		resp := SurveyResponse{
+			Success: false,
+			Message: "调查不存在",
+		}
+		data, _ := json.Marshal(resp)
+		return string(data), nil
+	}
+	println("[DEBUG] Survey found:", survey.Title)
+
 	// Check if already voted
-	var existingVote models.SurveyVote
-	result := c.db.Where("survey_id = ? AND user_id = ?", surveyID, userID).First(&existingVote)
-	if result.Error == nil {
+	var existingVoteCount int64
+	c.db.Model(&models.SurveyVote{}).
+		Where("survey_id = ? AND user_id = ?", surveyID, userID).
+		Count(&existingVoteCount)
+
+	if existingVoteCount > 0 {
+		println("[DEBUG] Vote failed: user already voted")
 		resp := SurveyResponse{
 			Success: false,
 			Message: "您已经参与过此调查",
@@ -229,13 +283,16 @@ func (c *SurveyController) Vote(surveyID uint, option string, userID uint) (stri
 
 	result = c.db.Create(&vote)
 	if result.Error != nil {
+		println("[DEBUG] Vote failed: database error:", result.Error.Error())
 		resp := SurveyResponse{
 			Success: false,
-			Message: "投票失败",
+			Message: "投票失败，请稍后重试",
 		}
 		data, _ := json.Marshal(resp)
-		return string(data), result.Error
+		return string(data), nil // Return nil error so frontend can parse JSON
 	}
+
+	println("[DEBUG] Vote successful, created vote ID:", vote.ID)
 
 	// Update total votes
 	c.db.Model(&models.Survey{}).Where("id = ?", surveyID).
@@ -256,17 +313,23 @@ func (c *SurveyController) Vote(surveyID uint, option string, userID uint) (stri
 
 // GetSurveyResults returns survey results
 func (c *SurveyController) GetSurveyResults(surveyID uint) (string, error) {
+	println("[DEBUG] GetSurveyResults called for survey ID:", surveyID)
+
 	var votes []models.SurveyVote
 	result := c.db.Where("survey_id = ?", surveyID).Find(&votes)
 
 	if result.Error != nil {
-		resp := SurveyResponse{
-			Success: false,
-			Message: "获取结果失败",
-		}
-		data, _ := json.Marshal(resp)
-		return string(data), result.Error
+		println("[DEBUG] GetSurveyResults failed: database error:", result.Error.Error())
+		// Return proper JSON error response
+		data, _ := json.Marshal(map[string]interface{}{
+			"success": false,
+			"message": "获取结果失败",
+			"data":    nil,
+		})
+		return string(data), nil // Return nil error so frontend can parse JSON
 	}
+
+	println("[DEBUG] GetSurveyResults found", len(votes), "votes")
 
 	// Count votes by option
 	optionCounts := make(map[string]int)
@@ -290,9 +353,11 @@ func (c *SurveyController) GetSurveyResults(surveyID uint) (string, error) {
 		"data":    resultData,
 	})
 	if err != nil {
+		println("[DEBUG] GetSurveyResults failed: JSON marshal error:", err.Error())
 		return "", err
 	}
 
+	println("[DEBUG] GetSurveyResults success, returning data")
 	return string(data), nil
 }
 

@@ -1,65 +1,118 @@
 <template>
-  <div class="survey">
-    <el-card>
-      <template #header>
-        <div class="card-header">
-          <span>民意调查管理</span>
-          <el-button type="primary" @click="showCreateDialog = true">新建调查</el-button>
+  <div class="survey-page">
+    <!-- 管理员/操作员界面 -->
+    <template v-if="userStore.isAdmin()">
+      <el-card class="main-card">
+        <template #header>
+          <div class="card-header">
+            <span class="card-title">民意调查管理</span>
+            <el-button type="primary" @click="showCreateDialog = true">新建调查</el-button>
+          </div>
+        </template>
+
+        <el-table :data="surveys" border stripe style="width: 100%" v-loading="loading">
+          <el-table-column prop="id" label="ID" width="60" align="center" />
+          <el-table-column prop="title" label="调查标题" min-width="200" />
+          <el-table-column prop="description" label="描述" min-width="200" show-overflow-tooltip />
+          <el-table-column label="时间" width="180" align="center">
+            <template #default="{ row }">
+              {{ formatDate(row.start_date) }} - {{ formatDate(row.end_date) }}
+            </template>
+          </el-table-column>
+          <el-table-column prop="status" label="状态" width="100" align="center">
+            <template #default="{ row }">
+              <el-tag :type="getStatusType(row.status)">{{ getStatusText(row.status) }}</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column prop="total_votes" label="投票数" width="80" align="center" />
+          <el-table-column label="操作" width="280" fixed="right" align="center">
+            <template #default="{ row }">
+              <el-button size="small" @click="viewResults(row)">查看结果</el-button>
+              <el-button v-if="row.status === 'draft'" type="success" size="small" @click="updateStatus(row, 'active')">发布</el-button>
+              <el-button v-if="row.status === 'active'" type="warning" size="small" @click="updateStatus(row, 'closed')">结束</el-button>
+              <el-button type="danger" size="small" @click="handleDelete(row)">删除</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+
+        <el-pagination
+          v-model:current-page="currentPage"
+          v-model:page-size="pageSize"
+          :total="total"
+          layout="total, prev, pager, next"
+          style="margin-top: 20px; justify-content: center"
+          @current-change="loadSurveys"
+        />
+      </el-card>
+    </template>
+
+    <!-- 普通用户界面 -->
+    <template v-else>
+      <!-- 无调查时显示 -->
+      <el-card v-if="activeSurveys.length === 0 && !loading" class="empty-card">
+        <el-empty description="暂无进行中的调查" />
+      </el-card>
+
+      <!-- 调查列表 -->
+      <div v-for="survey in activeSurveys" :key="survey.id" class="survey-item">
+        <div class="survey-header">
+          <h3 class="survey-title">{{ survey.title }}</h3>
+          <el-tag type="success" size="small">进行中</el-tag>
         </div>
-      </template>
 
-      <el-table :data="surveys" border style="width: 100%" v-loading="loading">
-        <el-table-column prop="id" label="ID" width="60" />
-        <el-table-column prop="title" label="调查标题" min-width="200" />
-        <el-table-column prop="description" label="描述" min-width="200" show-overflow-tooltip />
-        <el-table-column label="时间" width="180">
-          <template #default="{ row }">
-            {{ formatDate(row.start_date) }} - {{ formatDate(row.end_date) }}
-          </template>
-        </el-table-column>
-        <el-table-column prop="status" label="状态" width="100">
-          <template #default="{ row }">
-            <el-tag :type="getStatusType(row.status)">{{ getStatusText(row.status) }}</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="total_votes" label="投票数" width="80" />
-        <el-table-column label="操作" width="260" fixed="right">
-          <template #default="{ row }">
-            <el-button size="small" @click="viewResults(row)">查看结果</el-button>
-            <el-button
-              v-if="row.status === 'draft'"
-              type="success"
-              size="small"
-              @click="updateStatus(row, 'active')"
+        <p v-if="survey.description" class="survey-description">{{ survey.description }}</p>
+
+        <div class="survey-info">
+          <span>开始: {{ formatDate(survey.start_date) }}</span>
+          <span>结束: {{ formatDate(survey.end_date) }}</span>
+          <span>参与: {{ survey.total_votes || 0 }} 人</span>
+        </div>
+
+        <!-- 已投票提示 -->
+        <div v-if="hasVoted(survey.id)" class="voted-message">
+          <el-alert type="success" :closable="false" show-icon>
+            您已参与此调查，感谢您的参与！
+          </el-alert>
+        </div>
+
+        <!-- 投票选项 -->
+        <div v-else class="vote-section">
+          <div class="vote-label">请选择您的答案:</div>
+          <el-radio-group v-model="userVotes[survey.id]" class="vote-list">
+            <div
+              v-for="(option, index) in getSurveyOptions(survey)"
+              :key="index"
+              class="vote-item"
+              :class="{ 'is-selected': userVotes[survey.id] === option }"
+              @click="selectOption(survey.id, option)"
             >
-              发布
-            </el-button>
+              <div class="vote-item-content">
+                <span class="vote-index">{{ String(index + 1).padStart(2, '0') }}</span>
+                <el-radio :label="option" class="vote-radio">{{ option }}</el-radio>
+              </div>
+            </div>
+          </el-radio-group>
+          <div class="vote-actions">
             <el-button
-              v-if="row.status === 'active'"
-              type="warning"
-              size="small"
-              @click="updateStatus(row, 'closed')"
+              type="primary"
+              size="large"
+              :disabled="!userVotes[survey.id]"
+              :loading="voteLoading[survey.id]"
+              @click="submitVote(survey)"
             >
-              结束
+              提交投票
             </el-button>
-            <el-button type="danger" size="small" @click="handleDelete(row)">删除</el-button>
-          </template>
-        </el-table-column>
-      </el-table>
+          </div>
+        </div>
+      </div>
 
-      <el-pagination
-        v-model:current-page="currentPage"
-        v-model:page-size="pageSize"
-        :total="total"
-        layout="total, prev, pager, next"
-        style="margin-top: 20px"
-        @current-change="loadSurveys"
-      />
-    </el-card>
+      <!-- 加载中 -->
+      <div v-if="loading" v-loading="true" class="loading-container"></div>
+    </template>
 
-    <!-- Create Survey Dialog -->
+    <!-- 创建调查对话框 -->
     <el-dialog v-model="showCreateDialog" title="新建调查" width="600px">
-      <el-form ref="formRef" :model="form" :rules="rules" label-width="120px">
+      <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
         <el-form-item label="调查标题" prop="title">
           <el-input v-model="form.title" placeholder="请输入调查标题" />
         </el-form-item>
@@ -67,20 +120,16 @@
           <el-input v-model="form.description" type="textarea" :rows="3" placeholder="请输入调查描述（可选）" />
         </el-form-item>
         <el-form-item label="调查选项" required>
-          <div style="margin-bottom: 8px; color: #909399; font-size: 12px;">
-            请填写调查的可选答案，至少需要2个选项
-          </div>
-          <div v-for="(_option, index) in options" :key="index" style="margin-bottom: 10px">
+          <div class="option-hint">请填写调查的可选答案，至少需要2个选项</div>
+          <div v-for="(_option, index) in options" :key="index" class="option-input-row">
             <el-input v-model="options[index]" :placeholder="`选项 ${index + 1}`">
-              <template #prepend>
-                <span style="width: 60px; text-align: center">选项{{ index + 1 }}</span>
-              </template>
+              <template #prepend>选项{{ index + 1 }}</template>
               <template #append>
-                <el-button :icon="Delete" @click="removeOption(index)" />
+                <el-button :icon="Delete" @click="removeOption(index)" :disabled="options.length <= 2" />
               </template>
             </el-input>
           </div>
-          <el-button type="dashed" @click="addOption" style="width: 100%">
+          <el-button type="dashed" @click="addOption" class="add-option-btn">
             <el-icon><Plus /></el-icon> 添加选项
           </el-button>
         </el-form-item>
@@ -97,14 +146,12 @@
       </template>
     </el-dialog>
 
-    <!-- Results Dialog -->
+    <!-- 结果对话框 -->
     <el-dialog v-model="showResultsDialog" title="调查结果" width="600px">
       <div v-if="currentResults">
-        <h3 style="margin-bottom: 8px">{{ currentSurvey?.title }}</h3>
-        <p style="color: #606060; margin-bottom: 20px">
-          总投票数: <strong>{{ currentResults.total_votes || 0 }}</strong>
-        </p>
-        <div v-if="currentResults.total_votes > 0" ref="chartRef" style="width: 100%; height: 400px; margin-top: 20px"></div>
+        <h3>{{ currentSurvey?.title }}</h3>
+        <p class="result-summary">总投票数: <strong>{{ currentResults.total_votes || 0 }}</strong></p>
+        <div v-if="currentResults.total_votes > 0" ref="chartRef" class="chart-container"></div>
         <el-empty v-else description="暂无投票数据" :image-size="200" />
       </div>
     </el-dialog>
@@ -117,10 +164,14 @@ import { ElMessage, ElMessageBox, FormInstance, FormRules } from 'element-plus'
 import { Plus, Delete } from '@element-plus/icons-vue'
 import * as echarts from 'echarts'
 import api from '@/api'
+import { useUserStore } from '@/store/user'
+
+const userStore = useUserStore()
 
 const loading = ref(false)
 const submitLoading = ref(false)
 const surveys = ref<any[]>([])
+const activeSurveys = ref<any[]>([])
 const currentPage = ref(1)
 const pageSize = ref(10)
 const total = ref(0)
@@ -129,6 +180,10 @@ const showResultsDialog = ref(false)
 const currentSurvey = ref<any>(null)
 const currentResults = ref<any>(null)
 const chartRef = ref<HTMLElement>()
+const userVotes = ref<Record<number, string>>({})
+const voteLoading = ref<Record<number, boolean>>({})
+const votedSurveyIds = ref<Set<number>>(new Set())
+
 let chart: echarts.ECharts | null = null
 
 const formRef = ref<FormInstance>()
@@ -158,6 +213,94 @@ const loadSurveys = async () => {
     ElMessage.error('加载失败')
   } finally {
     loading.value = false
+  }
+}
+
+const loadActiveSurveys = async () => {
+  loading.value = true
+  try {
+    const response = await api.getActiveSurveys()
+    if (response.success) {
+      activeSurveys.value = response.data || []
+      for (const survey of activeSurveys.value) {
+        userVotes.value[survey.id] = ''
+        voteLoading.value[survey.id] = false
+      }
+    }
+  } catch (error) {
+    ElMessage.error('加载调查失败')
+  } finally {
+    loading.value = false
+  }
+}
+
+const getSurveyOptions = (survey: any) => {
+  try {
+    if (typeof survey.options === 'string') {
+      return JSON.parse(survey.options || '[]')
+    } else if (Array.isArray(survey.options)) {
+      return survey.options
+    }
+  } catch (e) {
+    console.error('Failed to parse options:', e)
+  }
+  return []
+}
+
+const hasVoted = (surveyId: number) => {
+  return votedSurveyIds.value.has(surveyId)
+}
+
+const selectOption = (surveyId: number, option: string) => {
+  userVotes.value[surveyId] = option
+}
+
+const submitVote = async (survey: any) => {
+  const selectedOption = userVotes.value[survey.id]
+  if (!selectedOption) {
+    ElMessage.warning('请先选择一个选项')
+    return
+  }
+
+  // 获取当前用户
+  const user = userStore.user || userStore.getUser()
+  console.log('[DEBUG] userStore.user:', userStore.user)
+  console.log('[DEBUG] userStore.getUser():', userStore.getUser())
+  console.log('[DEBUG] Final user:', user)
+  console.log('[DEBUG] User ID:', user?.id)
+  console.log('[DEBUG] Survey ID:', survey.id)
+  console.log('[DEBUG] Selected option:', selectedOption)
+
+  if (!user) {
+    ElMessage.error('用户未登录，请先登录')
+    return
+  }
+
+  if (!user.id || user.id === 0) {
+    ElMessage.error('用户信息异常，请重新登录')
+    return
+  }
+
+  voteLoading.value[survey.id] = true
+  try {
+    // Convert selectedOption to string for backend
+    const optionString = String(selectedOption)
+    console.log('[DEBUG] Calling API vote:', survey.id, optionString, user.id)
+    const response = await api.vote(survey.id, optionString, user.id)
+    console.log('[DEBUG] API response:', response)
+
+    if (response.success) {
+      ElMessage.success('投票成功！')
+      votedSurveyIds.value.add(survey.id)
+      survey.total_votes = (survey.total_votes || 0) + 1
+    } else {
+      ElMessage.error(response.message || '投票失败')
+    }
+  } catch (error) {
+    console.error('[DEBUG] Vote error:', error)
+    ElMessage.error('投票失败，请稍后重试')
+  } finally {
+    voteLoading.value[survey.id] = false
   }
 }
 
@@ -227,7 +370,7 @@ const handleCreate = async () => {
         JSON.stringify(validOptions),
         startDate,
         endDate,
-        1
+        (userStore.user || userStore.getUser())?.id || 1
       )
 
       if (response.success) {
@@ -283,8 +426,11 @@ const handleDelete = (survey: any) => {
 
 const viewResults = async (survey: any) => {
   currentSurvey.value = survey
+  console.log('[DEBUG] View results for survey:', survey.id)
   try {
     const response = await api.getSurveyResults(survey.id)
+    console.log('[DEBUG] GetSurveyResults response:', response)
+
     if (response.success) {
       currentResults.value = response.data
       showResultsDialog.value = true
@@ -294,6 +440,7 @@ const viewResults = async (survey: any) => {
       ElMessage.error(response.message || '加载结果失败')
     }
   } catch (error) {
+    console.error('[DEBUG] GetSurveyResults error:', error)
     ElMessage.error('加载结果失败')
   }
 }
@@ -314,7 +461,6 @@ const initChart = () => {
       optionList = currentSurvey.value.options
     }
   } catch (e) {
-    console.error('Failed to parse options:', e)
     optionList = []
   }
 
@@ -369,7 +515,11 @@ const initChart = () => {
 }
 
 onMounted(() => {
-  loadSurveys()
+  if (userStore.isAdmin()) {
+    loadSurveys()
+  } else {
+    loadActiveSurveys()
+  }
 })
 
 onUnmounted(() => {
@@ -378,13 +528,186 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.survey {
+.survey-page {
   width: 100%;
+}
+
+.main-card {
+  border-radius: 8px;
 }
 
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.card-title {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.empty-card {
+  border-radius: 8px;
+}
+
+.loading-container {
+  height: 200px;
+}
+
+/* 调查项样式 */
+.survey-item {
+  background: white;
+  border: 1px solid #e4e7ed;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
+.survey-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.survey-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #303133;
+}
+
+.survey-description {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  color: #606266;
+}
+
+.survey-info {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 16px;
+  padding: 10px 12px;
+  background: #f5f7fa;
+  border-radius: 4px;
+  font-size: 13px;
+  color: #606266;
+}
+
+.voted-message {
+  margin-top: 12px;
+}
+
+/* 投票区域 */
+.vote-section {
+  margin-top: 16px;
+}
+
+.vote-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #303133;
+  margin-bottom: 12px;
+}
+
+.vote-list {
+  display: block;
+  width: 100%;
+}
+
+.vote-item {
+  border: 1px solid #dcdfe6;
+  border-radius: 4px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: white;
+}
+
+.vote-item:hover {
+  border-color: #409eff;
+  background: #ecf5ff;
+}
+
+.vote-item.is-selected {
+  border-color: #409eff;
+  background: #ecf5ff;
+}
+
+.vote-item-content {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+}
+
+.vote-index {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 28px;
+  background: #e4e7ed;
+  border-radius: 4px;
+  color: #606266;
+  font-size: 13px;
+  font-weight: 600;
+  margin-right: 12px;
+  flex-shrink: 0;
+}
+
+.vote-item.is-selected .vote-index {
+  background: #409eff;
+  color: white;
+}
+
+.vote-radio {
+  margin: 0;
+  flex: 1;
+}
+
+:deep(.vote-radio .el-radio__label) {
+  font-size: 14px;
+  color: #303133;
+}
+
+:deep(.vote-radio.is-checked .el-radio__label) {
+  color: #409eff;
+  font-weight: 600;
+}
+
+.vote-actions {
+  margin-top: 16px;
+  text-align: center;
+}
+
+.vote-actions .el-button {
+  min-width: 150px;
+}
+
+/* 创建调查对话框样式 */
+.option-hint {
+  font-size: 12px;
+  color: #909399;
+  margin-bottom: 8px;
+}
+
+.option-input-row {
+  margin-bottom: 10px;
+}
+
+.add-option-btn {
+  width: 100%;
+}
+
+.chart-container {
+  width: 100%;
+  height: 400px;
+  margin-top: 20px;
+}
+
+.result-summary {
+  color: #606060;
+  margin-bottom: 20px;
 }
 </style>

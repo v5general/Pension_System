@@ -26,7 +26,7 @@ func main() {
 	}
 
 	// Auto migrate tables
-	err = database.AutoMigrate(db, &models.User{}, &models.Elderly{}, &models.Survey{}, &models.Issue{})
+	err = database.AutoMigrate(db, &models.User{}, &models.Elderly{}, &models.Survey{}, &models.SurveyVote{}, &models.Issue{})
 	if err != nil {
 		println("Failed to migrate database:", err.Error())
 		return
