@@ -1,46 +1,50 @@
-# 智慧养老系统
+# Smart Pension System
 
-基于 Wails v2 + Vue 3 + Element Plus 开发的桌面应用程序，用于老年人信息管理、民意调查和问题收集。
+[![License](https://img.shields.io/badge/license-GPL--3.0-green.svg)](LICENSE)
 
-## 技术栈
+**English** | [简体中文](./README.zh-CN.md)
 
-### 后端
+A desktop application built with Wails v2 + Vue 3 + Element Plus for elderly information management, opinion polling, and issue collection.
+
+## Tech Stack
+
+### Backend
 - Go 1.21+
 - Wails v2
 - GORM (SQLite)
-- bcrypt 密码加密
+- bcrypt password hashing
 
-### 前端
+### Frontend
 - Vue 3.4+
 - TypeScript
 - Element Plus UI
-- ECharts 图表
-- Pinia 状态管理
+- ECharts
+- Pinia state management
 - Vue Router
 
-## 项目结构
+## Project Structure
 
 ```
 pension-system/
-├── main.go                 # 应用入口
-├── app.go                  # 应用上下文
-├── go.mod                  # Go 模块配置
-├── wails.json              # Wails 配置
-├── database/               # 数据库配置
+├── main.go                 # Application entry
+├── app.go                  # Application context
+├── go.mod                  # Go module definition
+├── wails.json              # Wails configuration
+├── database/               # Database configuration
 │   └── db.go
-├── models/                 # 数据模型
-│   ├── user.go            # 用户模型
-│   ├── elderly.go         # 老年人模型
-│   ├── survey.go          # 民意调查模型
-│   └── issue.go           # 问题收集模型
-├── controllers/            # 控制器
-│   ├── auth.go            # 用户认证
-│   ├── data.go            # 数据管理
-│   ├── survey.go          # 民意调查
-│   └── issue.go           # 问题收集
-├── utils/                  # 工具函数
-│   └── crypto.go          # 密码加密
-└── frontend/              # 前端代码
+├── models/                 # Data models
+│   ├── user.go            # User model
+│   ├── elderly.go         # Elderly model
+│   ├── survey.go          # Survey model
+│   └── issue.go           # Issue model
+├── controllers/            # Controllers
+│   ├── auth.go            # Authentication
+│   ├── data.go            # Data management
+│   ├── survey.go          # Opinion surveys
+│   └── issue.go           # Issue collection
+├── utils/                  # Utility functions
+│   └── crypto.go          # Password hashing
+└── frontend/              # Frontend code
     ├── index.html
     ├── package.json
     ├── vite.config.ts
@@ -48,13 +52,13 @@ pension-system/
     └── src/
         ├── main.ts
         ├── App.vue
-        ├── api/           # API 封装
+        ├── api/           # API wrappers
         │   └── index.ts
-        ├── router/        # 路由配置
+        ├── router/        # Routing configuration
         │   └── index.ts
-        ├── store/         # 状态管理
+        ├── store/         # State management
         │   └── user.ts
-        └── views/         # 页面组件
+        └── views/         # Page components
             ├── Login.vue
             ├── Home.vue
             ├── DataSummary.vue
@@ -64,109 +68,109 @@ pension-system/
             └── Issue.vue
 ```
 
-## 功能模块
+## Modules
 
-### 1. 用户认证
-- 用户登录/注册
-- 角色权限管理（管理员、操作员、普通用户）
-- 默认管理员账号: admin / admin123
+### 1. Authentication
+- User login/registration
+- Role-based access control (Administrator, Operator, Regular User)
+- Default admin account: admin / admin123
 
-### 2. 数据汇总
-- 老年人总数统计
-- 性别分布图表
-- 年龄分布图表
-- 健康状况分布
-- 护理等级分布
+### 2. Data Summary
+- Total elderly count statistics
+- Gender distribution chart
+- Age distribution chart
+- Health status distribution
+- Care level distribution
 
-### 3. 数据管理（管理员）
-- 老年人信息 CRUD
-- 数据搜索和分页
-- 数据导入导出
+### 3. Data Management (Administrator)
+- Elderly information CRUD
+- Data search and pagination
+- Data import/export
 
-### 4. 数据录入
-- 老年人信息表单
-- 表单验证
-- 数据保存
+### 4. Data Entry
+- Elderly information form
+- Form validation
+- Data saving
 
-### 5. 民意调查（管理员）
-- 创建调查
-- 发布/结束调查
-- 查看投票结果
-- 图表展示
+### 5. Opinion Surveys (Administrator)
+- Create surveys
+- Publish/close surveys
+- View voting results
+- Chart visualization
 
-### 6. 问题收集
-- 提交问题
-- 问题分类和优先级
-- 问题回复
-- 问题关闭
+### 6. Issue Collection
+- Submit issues
+- Issue categorization and priority
+- Issue replies
+- Issue closure
 
-## 安装和运行
+## Installation and Usage
 
-### 前置要求
-1. Go 1.21 或更高版本
-2. Node.js 18 或更高版本
+### Prerequisites
+1. Go 1.21 or later
+2. Node.js 18 or later
 3. Wails CLI
 
-### 安装 Wails CLI
+### Install Wails CLI
 ```bash
 go install github.com/wailsapp/wails/v2/cmd/wails@latest
 ```
 
-### 安装依赖
+### Install Dependencies
 
-#### 后端依赖
+#### Backend dependencies
 ```bash
 cd D:\Workspace\PensionSystem\pension-system
 go mod download
 ```
 
-#### 前端依赖
+#### Frontend dependencies
 ```bash
 cd frontend
 npm install
 ```
 
-### 开发模式运行
+### Development Mode
 ```bash
 wails dev
 ```
 
-### 构建应用
+### Build Application
 ```bash
 wails build
 ```
 
-## 数据库
+## Database
 
-应用使用 SQLite 数据库，数据库文件 `pension_system.db` 会在首次运行时自动创建。
+The application uses SQLite. The database file `pension_system.db` is created automatically on first run.
 
-### 数据表
-- `users` - 用户表
-- `elderly` - 老年人信息表
-- `surveys` - 民意调查表
-- `survey_votes` - 调查投票表
-- `issues` - 问题收集表
+### Tables
+- `users` - User table
+- `elderly` - Elderly information table
+- `surveys` - Survey table
+- `survey_votes` - Survey vote table
+- `issues` - Issue collection table
 
-## 默认账号
+## Default Account
 
-- **用户名**: admin
-- **密码**: admin123
-- **角色**: 管理员
+- **Username**: admin
+- **Password**: admin123
+- **Role**: Administrator
 
-## 开发说明
+## Development Guide
 
-### 添加新的 API 方法
+### Adding a New API Method
 
-1. 在 `controllers/` 目录下的相应控制器中添加方法
-2. 在 `main.go` 的 `Bind` 中注册控制器
-3. 在 `frontend/src/api/index.ts` 中添加 API 调用方法
+1. Add the method to the appropriate controller under `controllers/`
+2. Register the controller in the `Bind` call in `main.go`
+3. Add the API call method in `frontend/src/api/index.ts`
 
-### 添加新的页面
+### Adding a New Page
 
-1. 在 `frontend/src/views/` 创建 Vue 组件
-2. 在 `frontend/src/router/index.ts` 中添加路由
-3. 在 `frontend/src/views/Home.vue` 中添加菜单项
+1. Create a Vue component under `frontend/src/views/`
+2. Add a route in `frontend/src/router/index.ts`
+3. Add a menu item in `frontend/src/views/Home.vue`
 
-## 许可证
+## License
 
-GPL-3.0
+This project is licensed under the [GPL-3.0 License](./LICENSE).
